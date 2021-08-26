@@ -32,8 +32,16 @@ defmodule Soap.Response.Parser do
   end
 
   @spec parse_record(tuple()) :: map() | String.t()
-  defp parse_record({:xmlElement, tag_name, _, _, _, _, _, _, elements, _, _, _}) do
+  defp parse_record({:xmlElement, tag_name, _, _, _, _, _, [], elements, _, _, _}) do
     %{tag_name => parse_elements(elements)}
+  end
+
+  defp parse_record({:xmlElement, tag_name, _, _, _, _, _, attributes, elements, _, _, _}) when is_list(attributes) do
+    if is_nil_attribute_present?(attributes) do
+      %{tag_name => nil}
+    else
+      %{tag_name => parse_elements(elements)}
+    end
   end
 
   defp parse_record({:xmlText, _, _, _, value, _}), do: transform_record_value(value)
@@ -44,7 +52,11 @@ defmodule Soap.Response.Parser do
 
   @spec parse_elements(list() | tuple()) :: map()
   defp parse_elements([]), do: %{}
-  defp parse_elements(elements) when is_tuple(elements), do: parse_record(elements)
+
+  defp parse_elements(elements) when is_tuple(elements) do
+    elements
+    |> parse_record
+  end
 
   defp parse_elements(elements) when is_list(elements) do
     elements
@@ -78,6 +90,12 @@ defmodule Soap.Response.Parser do
 
     Enum.uniq(keys) == keys
   end
+
+  @spec is_nil_attribute_present?(list()) :: boolean()
+  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, 'true', _}, _t]), do: true
+  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, 'true', _}]), do: true
+  defp is_nil_attribute_present?([_h | t]), do: is_nil_attribute_present?(t)
+  defp is_nil_attribute_present?([]), do: false
 
   defp get_envelope_namespace(xml_response) do
     env_namespace = @soap_version_namespaces[soap_version()]

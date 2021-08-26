@@ -71,6 +71,8 @@ defmodule Soap.Request.Params do
   end
 
   @spec validate_param_attributes(val_map :: map(), k :: String.t(), v :: String.t()) :: String.t() | nil
+  defp validate_param_attributes(_val_map, _k, nil), do: nil
+
   defp validate_param_attributes(val_map, k, v) do
     attributes = val_map[k]
     [_, type] = String.split(attributes.type, ":")
@@ -160,6 +162,7 @@ defmodule Soap.Request.Params do
   end
 
   @spec construct_xml_request_body(params :: String.t() | atom() | number()) :: String.t()
+  defp construct_xml_request_body(nil), do: nil
   defp construct_xml_request_body(params) when is_atom(params) or is_number(params), do: params |> to_string
   defp construct_xml_request_body(params) when is_binary(params), do: params
 
@@ -182,6 +185,8 @@ defmodule Soap.Request.Params do
   defp construct_xml_request_header(params) when is_binary(params), do: params
 
   @spec insert_tag_parameters(params :: list()) :: list()
+  defp insert_tag_parameters([k, nil]), do: [k, %{"xsi:nil": true}, nil]
+
   defp insert_tag_parameters(params) when is_list(params), do: params |> List.insert_at(1, nil)
 
   @spec add_action_tag_wrapper(list(), map(), String.t()) :: list()
