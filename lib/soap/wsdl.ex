@@ -1,6 +1,6 @@
 defmodule Soap.Wsdl do
   @moduledoc """
-  Provides functions for parsing wsdl file
+  Provides functions for parsing wsdl file.
   """
   @soap_version_namespaces %{
     "1.1" => :"http://schemas.xmlsoap.org/wsdl/soap/",
@@ -26,10 +26,12 @@ defmodule Soap.Wsdl do
 
   @spec parse(String.t(), String.t(), Keyword.t()) :: {:ok, map()}
   def parse(wsdl, file_path, opts \\ []) do
+    wsdl = SweetXml.parse(wsdl)
+
     protocol_namespace = get_protocol_namespace(wsdl)
     soap_namespace = get_soap_namespace(wsdl, opts)
     schema_namespace = get_schema_namespace(wsdl)
-    endpoint = get_endpoint(wsdl, protocol_namespace, soap_namespace)
+    endpoint = Keyword.get(opts, :endpoint, get_endpoint(wsdl, protocol_namespace, soap_namespace))
 
     parsed_response = %{
       namespaces: get_namespaces(wsdl, schema_namespace, protocol_namespace),
@@ -37,7 +39,7 @@ defmodule Soap.Wsdl do
       complex_types: get_complex_types(wsdl, schema_namespace, protocol_namespace),
       operations: get_operations(wsdl, protocol_namespace, soap_namespace, opts),
       schema_attributes: get_schema_attributes(wsdl),
-      validation_types: get_validation_types(wsdl, file_path, protocol_namespace, schema_namespace, endpoint),
+      validation_types: get_validation_types(wsdl, file_path, protocol_namespace, schema_namespace, endpoint, opts),
       soap_version: soap_version(opts),
       messages: get_messages(wsdl, protocol_namespace)
     }
@@ -74,9 +76,7 @@ defmodule Soap.Wsdl do
 
       xpath(
         wsdl,
-        ~x"//#{ns("types", protocol_ns)}/#{ns("schema", schema_namespace)}/#{ns("import", schema_namespace)}[@namespace='#{
-          value
-        }']"
+        ~x"//#{ns("types", protocol_ns)}/#{ns("schema", schema_namespace)}/#{ns("import", schema_namespace)}[@namespace='#{value}']"
       ) ->
         {string_key, %{value: value, type: :xsd}}
 
@@ -89,9 +89,7 @@ defmodule Soap.Wsdl do
   def get_endpoint(wsdl, protocol_ns, soap_ns) do
     wsdl
     |> xpath(
-      ~x"//#{ns("definitions", protocol_ns)}/#{ns("service", protocol_ns)}/#{ns("port", protocol_ns)}/#{
-        ns("address", soap_ns)
-      }/@location"s
+      ~x"//#{ns("definitions", protocol_ns)}/#{ns("service", protocol_ns)}/#{ns("port", protocol_ns)}/#{ns("address", soap_ns)}/@location"s
     )
   end
 
@@ -105,8 +103,8 @@ defmodule Soap.Wsdl do
     )
   end
 
-  @spec get_validation_types(String.t(), String.t(), String.t(), String.t(), String.t()) :: map()
-  def get_validation_types(wsdl, file_path, protocol_ns, schema_ns, endpoint) do
+  @spec get_validation_types(String.t(), String.t(), String.t(), String.t(), String.t(), keyword()) :: map()
+  def get_validation_types(wsdl, file_path, protocol_ns, schema_ns, endpoint, opts \\ []) do
     Map.merge(
       Type.get_complex_types(
         wsdl,
@@ -114,7 +112,7 @@ defmodule Soap.Wsdl do
       ),
       wsdl
       |> get_full_paths(file_path, protocol_ns, schema_ns, endpoint)
-      |> get_imported_types
+      |> get_imported_types(opts)
       |> Enum.reduce(%{}, &Map.merge(&2, &1))
     )
   end
@@ -149,11 +147,21 @@ defmodule Soap.Wsdl do
     end
   end
 
-  @spec get_imported_types(list()) :: list(map())
-  defp get_imported_types(xsd_paths) do
+  @spec get_imported_types(list(), keyword()) :: list(map())
+  defp get_imported_types(xsd_paths, opts) do
+    opts
+    |> Keyword.get(:skip_type_imports, false)
+    |> case do
+      true -> %{}
+      _ -> do_get_imported_types(xsd_paths, opts)
+    end
+  end
+
+  @spec do_get_imported_types(list(), keyword()) :: list(map())
+  defp do_get_imported_types(xsd_paths, opts) do
     xsd_paths
     |> Enum.map(fn xsd_path ->
-      case Xsd.parse(xsd_path) do
+      case Xsd.parse(xsd_path, opts) do
         {:ok, xsd} -> xsd.complex_types
         _ -> %{}
       end
