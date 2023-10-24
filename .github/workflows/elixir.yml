@@ -70,4 +70,4 @@ jobs:
         run: mix dialyzer --no-check --halt-exit-status
 
       - name: Run tests
-        run: mix coveralls.github
+        run: mix coveralls
