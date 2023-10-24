@@ -49,7 +49,7 @@ defmodule Soap.Request.ParamsTest do
       Fixtures.load_xml("send_service/SendMessageRequest.xml")
       |> String.replace("WSPB", "123")
 
-    parameters = %{recipient: "123", body: "BODY", type: "TYPE", date: "2018-01-19"}
+    parameters = %{recipient: "123", body: nil, type: "TYPE", date: "2018-01-19"}
     {_, wsdl} = Wsdl.parse_from_file(@wsdl_path)
     function_result = Params.build_body(wsdl, @operation, parameters, nil)
 
