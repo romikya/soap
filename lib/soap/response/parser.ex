@@ -92,8 +92,8 @@ defmodule Soap.Response.Parser do
   end
 
   @spec is_nil_attribute_present?(list()) :: boolean()
-  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, 'true', _}, _t]), do: true
-  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, 'true', _}]), do: true
+  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, ~c"true", _}, _t]), do: true
+  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, ~c"true", _}]), do: true
   defp is_nil_attribute_present?([_h | t]), do: is_nil_attribute_present?(t)
   defp is_nil_attribute_present?([]), do: false
 
