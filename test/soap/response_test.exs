@@ -12,14 +12,14 @@ defmodule Soap.ResponseTest do
       status_code: 200
     }
 
-    correctly_parsed_response = %{response: %{message: "Hello!"}}
+    correctly_parsed_response = %{response: %{message: "Hello!", subMessage: nil}}
 
     assert Response.parse(response) == correctly_parsed_response
   end
 
   test "#Soap.Response.parse/2, when request was successful" do
     xml_body = Fixtures.load_xml("send_service/SendMessageResponse.xml")
-    correctly_parsed_response = %{response: %{message: "Hello!"}}
+    correctly_parsed_response = %{response: %{message: "Hello!", subMessage: nil}}
 
     assert Response.parse(xml_body, 200) == correctly_parsed_response
   end
