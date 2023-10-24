@@ -21,7 +21,7 @@ defmodule Soap.Request.Params do
   Returns XML-like string.
   """
 
-  @spec build_body(wsdl :: map(), operation :: String.t() | atom(), params :: map() | tuple(), headers :: map()) ::
+  @spec build_body(wsdl :: map(), operation :: String.t() | atom(), params :: map() | Keyword.t(), headers :: map()) ::
           String.t()
   def build_body(wsdl, operation, params, headers) do
     with {:ok, body} <- build_soap_body(wsdl, operation, params),
