@@ -8,10 +8,6 @@ defmodule Soap.Request.Params do
     "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema",
     "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance"
   }
-  @soap_version_namespaces %{
-    "1.1" => "http://schemas.xmlsoap.org/soap/envelope/",
-    "1.2" => "http://www.w3.org/2003/05/soap-envelope"
-  }
   @date_type_regex "[0-9]{4}-[0-9]{2}-[0-9]{2}"
   @date_time_type_regex "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
 
@@ -299,14 +295,19 @@ defmodule Soap.Request.Params do
   @spec build_soap_version_attribute(map()) :: map()
   defp build_soap_version_attribute(wsdl) do
     soap_version = wsdl |> soap_version() |> to_string
-    %{"xmlns:#{env_namespace()}" => @soap_version_namespaces[soap_version]}
+    %{"xmlns:#{env_namespace()}" => Soap.get_namespace(soap_version)}
   end
 
   @spec build_action_attribute(map(), String.t()) :: map()
   defp build_action_attribute(wsdl, operation) do
-    action_attribute_namespace = get_action_namespace(wsdl, operation)
-    action_attribute_value = wsdl[:namespaces][action_attribute_namespace][:value]
-    prepare_action_attribute(action_attribute_namespace, action_attribute_value)
+    case get_action_namespace(wsdl, operation) do
+      "" ->
+        %{}
+
+      action_attribute_namespace ->
+        action_attribute_value = wsdl[:namespaces][action_attribute_namespace][:value]
+        prepare_action_attribute(action_attribute_namespace, action_attribute_value)
+    end
   end
 
   defp prepare_action_attribute(_action_attribute_namespace, nil), do: %{}

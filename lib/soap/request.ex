@@ -31,8 +31,8 @@ defmodule Soap.Request do
   @spec get_url(wsdl :: map()) :: String.t()
   defp get_url(wsdl) do
     case force_https?() do
-       true -> String.replace(wsdl.endpoint, "http://", "https://")
-       _ -> wsdl.endpoint
+      true -> String.replace(wsdl.endpoint, "http://", "https://")
+      _ -> wsdl.endpoint
     end
   end
 

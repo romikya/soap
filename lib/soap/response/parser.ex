@@ -5,10 +5,6 @@ defmodule Soap.Response.Parser do
 
   import SweetXml, only: [xpath: 2, sigil_x: 2]
 
-  @soap_version_namespaces %{
-    "1.1" => :"http://schemas.xmlsoap.org/soap/envelope/",
-    "1.2" => :"http://www.w3.org/2003/05/soap-envelope"
-  }
   @doc """
   Executing with XML response body.
 
@@ -98,7 +94,7 @@ defmodule Soap.Response.Parser do
   defp is_nil_attribute_present?([]), do: false
 
   defp get_envelope_namespace(xml_response) do
-    env_namespace = @soap_version_namespaces[soap_version()]
+    env_namespace = Soap.get_namespace_atoms()
 
     xml_response
     |> xpath(~x"//namespace::*"l)
@@ -122,6 +118,4 @@ defmodule Soap.Response.Parser do
 
   defp apply_namespace_to_tag("", tag), do: tag
   defp apply_namespace_to_tag(env_namespace, tag), do: env_namespace <> ":" <> tag
-
-  defp soap_version, do: Application.fetch_env!(:soap, :globals)[:version]
 end

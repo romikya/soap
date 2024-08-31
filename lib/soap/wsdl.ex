@@ -2,10 +2,6 @@ defmodule Soap.Wsdl do
   @moduledoc """
   Provides functions for parsing wsdl file.
   """
-  @soap_version_namespaces %{
-    "1.1" => :"http://schemas.xmlsoap.org/wsdl/soap/",
-    "1.2" => :"http://schemas.xmlsoap.org/wsdl/soap12/"
-  }
 
   import SweetXml, except: [parse: 1, parse: 2]
 
@@ -40,7 +36,7 @@ defmodule Soap.Wsdl do
       operations: get_operations(wsdl, protocol_namespace, soap_namespace, opts),
       schema_attributes: get_schema_attributes(wsdl),
       validation_types: get_validation_types(wsdl, file_path, protocol_namespace, schema_namespace, endpoint, opts),
-      soap_version: soap_version(opts),
+      soap_version: Soap.version(opts),
       messages: get_messages(wsdl, protocol_namespace)
     }
 
@@ -221,8 +217,10 @@ defmodule Soap.Wsdl do
 
   @spec get_soap_namespace(Soap.xml(), list()) :: String.t()
   defp get_soap_namespace(wsdl, opts) when is_list(opts) do
-    version = soap_version(opts)
-    namespace = @soap_version_namespaces[version]
+    namespace =
+      opts
+      |> Soap.version()
+      |> Soap.get_namespace_atoms()
 
     wsdl
     |> xpath(~x"//namespace::*"l)
@@ -243,9 +241,6 @@ defmodule Soap.Wsdl do
         )
     end
   end
-
-  defp soap_version, do: Application.fetch_env!(:soap, :globals)[:version]
-  defp soap_version(opts) when is_list(opts), do: Keyword.get(opts, :soap_version, soap_version())
 
   defp ns(name, []), do: "#{name}"
   defp ns(name, namespace), do: "#{namespace}:#{name}"
