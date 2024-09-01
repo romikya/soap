@@ -2,7 +2,11 @@ defmodule Soap.Wsdl do
   @moduledoc """
   Provides functions for parsing wsdl file.
   """
-
+  @soap_version_namespaces %{
+    "1.0" => :"http://schemas.xmlsoap.org/wsdl/soap/",
+    "1.1" => :"http://schemas.xmlsoap.org/wsdl/soap/",
+    "1.2" => :"http://schemas.xmlsoap.org/wsdl/soap12/"
+  }
   import SweetXml, except: [parse: 1, parse: 2]
 
   alias Soap.{Request, Type, Xsd}
@@ -217,10 +221,7 @@ defmodule Soap.Wsdl do
 
   @spec get_soap_namespace(Soap.xml(), list()) :: String.t()
   defp get_soap_namespace(wsdl, opts) when is_list(opts) do
-    namespace =
-      opts
-      |> Soap.version()
-      |> Soap.get_namespace_atoms()
+    namespace = @soap_version_namespaces[Soap.version(opts)]
 
     wsdl
     |> xpath(~x"//namespace::*"l)
