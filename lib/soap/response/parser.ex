@@ -5,10 +5,6 @@ defmodule Soap.Response.Parser do
 
   import SweetXml, only: [xpath: 2, sigil_x: 2]
 
-  @soap_version_namespaces %{
-    "1.1" => :"http://schemas.xmlsoap.org/soap/envelope/",
-    "1.2" => :"http://www.w3.org/2003/05/soap-envelope"
-  }
   @doc """
   Executing with XML response body.
 
@@ -32,8 +28,16 @@ defmodule Soap.Response.Parser do
   end
 
   @spec parse_record(tuple()) :: map() | String.t()
-  defp parse_record({:xmlElement, tag_name, _, _, _, _, _, _, elements, _, _, _}) do
+  defp parse_record({:xmlElement, tag_name, _, _, _, _, _, [], elements, _, _, _}) do
     %{tag_name => parse_elements(elements)}
+  end
+
+  defp parse_record({:xmlElement, tag_name, _, _, _, _, _, attributes, elements, _, _, _}) when is_list(attributes) do
+    if is_nil_attribute_present?(attributes) do
+      %{tag_name => nil}
+    else
+      %{tag_name => parse_elements(elements)}
+    end
   end
 
   defp parse_record({:xmlText, _, _, _, value, _}), do: transform_record_value(value)
@@ -44,7 +48,11 @@ defmodule Soap.Response.Parser do
 
   @spec parse_elements(list() | tuple()) :: map()
   defp parse_elements([]), do: %{}
-  defp parse_elements(elements) when is_tuple(elements), do: parse_record(elements)
+
+  defp parse_elements(elements) when is_tuple(elements) do
+    elements
+    |> parse_record
+  end
 
   defp parse_elements(elements) when is_list(elements) do
     elements
@@ -79,8 +87,14 @@ defmodule Soap.Response.Parser do
     Enum.uniq(keys) == keys
   end
 
+  @spec is_nil_attribute_present?(list()) :: boolean()
+  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, ~c"true", _}, _t]), do: true
+  defp is_nil_attribute_present?([{:xmlAttribute, :"xsi:nil", _, _, _, _, _, _, ~c"true", _}]), do: true
+  defp is_nil_attribute_present?([_h | t]), do: is_nil_attribute_present?(t)
+  defp is_nil_attribute_present?([]), do: false
+
   defp get_envelope_namespace(xml_response) do
-    env_namespace = @soap_version_namespaces[soap_version()]
+    env_namespace = Soap.get_namespace_atoms()
 
     xml_response
     |> xpath(~x"//namespace::*"l)
@@ -104,6 +118,4 @@ defmodule Soap.Response.Parser do
 
   defp apply_namespace_to_tag("", tag), do: tag
   defp apply_namespace_to_tag(env_namespace, tag), do: env_namespace <> ":" <> tag
-
-  defp soap_version, do: Application.fetch_env!(:soap, :globals)[:version]
 end

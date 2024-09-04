@@ -30,6 +30,14 @@ defmodule Soap.Request do
 
   @spec get_url(wsdl :: map()) :: String.t()
   defp get_url(wsdl) do
-    wsdl.endpoint
+    case force_https?() do
+      true -> String.replace(wsdl.endpoint, "http://", "https://")
+      _ -> wsdl.endpoint
+    end
+  end
+
+  @spec force_https?() :: boolean()
+  def force_https? do
+    Application.get_env(:soap, :globals)[:force_https] || false
   end
 end

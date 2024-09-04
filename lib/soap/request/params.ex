@@ -8,10 +8,6 @@ defmodule Soap.Request.Params do
     "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema",
     "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance"
   }
-  @soap_version_namespaces %{
-    "1.1" => "http://schemas.xmlsoap.org/soap/envelope/",
-    "1.2" => "http://www.w3.org/2003/05/soap-envelope"
-  }
   @date_type_regex "[0-9]{4}-[0-9]{2}-[0-9]{2}"
   @date_time_type_regex "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
 
@@ -21,7 +17,7 @@ defmodule Soap.Request.Params do
   Returns XML-like string.
   """
 
-  @spec build_body(wsdl :: map(), operation :: String.t() | atom(), params :: map() | tuple(), headers :: map()) ::
+  @spec build_body(wsdl :: map(), operation :: String.t() | atom(), params :: map() | Keyword.t(), headers :: map()) ::
           String.t()
   def build_body(wsdl, operation, params, headers) do
     with {:ok, body} <- build_soap_body(wsdl, operation, params),
@@ -39,7 +35,7 @@ defmodule Soap.Request.Params do
   @spec validate_params(params :: any(), wsdl :: map(), operation :: String.t()) :: any()
   def validate_params(params, _wsdl, _operation) when is_binary(params), do: params
 
-  def validate_params({_tag, _attrs, _nested} = param, wsdl, operation) do
+  def validate_params(param = {_tag, _attrs, _nested}, wsdl, operation) do
     case validate_param(param, wsdl, operation) do
       nil -> param
       error -> {:error, error}
@@ -82,6 +78,8 @@ defmodule Soap.Request.Params do
   end
 
   @spec validate_param_attributes(val_map :: map(), k :: String.t(), v :: String.t()) :: String.t() | nil
+  defp validate_param_attributes(_val_map, _k, nil), do: nil
+
   defp validate_param_attributes(val_map, k, v) do
     attributes = val_map[k]
     [_, type] = String.split(attributes.type, ":")
@@ -172,6 +170,7 @@ defmodule Soap.Request.Params do
   end
 
   @spec construct_xml_request_body(params :: String.t() | atom() | number()) :: String.t()
+  defp construct_xml_request_body(nil), do: nil
   defp construct_xml_request_body(params) when is_atom(params), do: params |> to_string()
   defp construct_xml_request_body(params) when is_binary(params) or is_number(params), do: params
 
@@ -194,6 +193,8 @@ defmodule Soap.Request.Params do
   defp construct_xml_request_header(params) when is_binary(params), do: params
 
   @spec insert_tag_parameters(params :: list()) :: list()
+  defp insert_tag_parameters([k, nil]), do: [k, %{"xsi:nil": true}, nil]
+
   defp insert_tag_parameters(params) when is_list(params), do: params |> List.insert_at(1, nil)
 
   @spec add_action_tag_wrapper(list(), map(), String.t()) :: list()
@@ -294,14 +295,19 @@ defmodule Soap.Request.Params do
   @spec build_soap_version_attribute(map()) :: map()
   defp build_soap_version_attribute(wsdl) do
     soap_version = wsdl |> soap_version() |> to_string
-    %{"xmlns:#{env_namespace()}" => @soap_version_namespaces[soap_version]}
+    %{"xmlns:#{env_namespace()}" => Soap.get_namespace(soap_version)}
   end
 
   @spec build_action_attribute(map(), String.t()) :: map()
   defp build_action_attribute(wsdl, operation) do
-    action_attribute_namespace = get_action_namespace(wsdl, operation)
-    action_attribute_value = wsdl[:namespaces][action_attribute_namespace][:value]
-    prepare_action_attribute(action_attribute_namespace, action_attribute_value)
+    case get_action_namespace(wsdl, operation) do
+      "" ->
+        %{}
+
+      action_attribute_namespace ->
+        action_attribute_value = wsdl[:namespaces][action_attribute_namespace][:value]
+        prepare_action_attribute(action_attribute_namespace, action_attribute_value)
+    end
   end
 
   defp prepare_action_attribute(_action_attribute_namespace, nil), do: %{}
