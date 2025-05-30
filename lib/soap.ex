@@ -56,6 +56,22 @@ defmodule Soap do
 
   alias Soap.{Request, Response, Wsdl}
 
+  # SweetXml functions, such as `xpath`, can take either a String or an
+  # xmlElement.  Both are used by Soap.
+  @type xml :: String.t() | SweetXml.xmlElement()
+
+  @namespace_versions %{
+    "1.0" => "http://schemas.xmlsoap.org/soap/envelope/",
+    "1.1" => "http://schemas.xmlsoap.org/soap/envelope/",
+    "1.2" => "http://www.w3.org/2003/05/soap-envelope"
+  }
+
+  @namespace_versions_atoms %{
+    "1.0" => :"http://schemas.xmlsoap.org/soap/envelope/",
+    "1.1" => :"http://schemas.xmlsoap.org/soap/envelope/",
+    "1.2" => :"http://www.w3.org/2003/05/soap-envelope"
+  }
+
   @doc """
   Initialization of a WSDL model. Response a map of parsed data from file.
   Returns `{:ok, wsdl}`.
@@ -131,6 +147,56 @@ defmodule Soap do
   @spec operations(map()) :: nonempty_list(String.t())
   def operations(wsdl) do
     wsdl.operations
+  end
+
+  @doc """
+  Returns the namespace according to the version passed as a parameter.
+
+  ## Example:
+
+  ```elixir
+  iex> Soap.get_namespace("1.2")
+  "http://www.w3.org/2003/05/soap-envelope"
+
+  iex> Soap.get_namespace()
+  "http://schemas.xmlsoap.org/soap/envelope/"
+  ```
+
+  """
+  def get_namespace, do: @namespace_versions[version()]
+  def get_namespace(version), do: @namespace_versions[version]
+
+  @doc """
+  Returns the namespace as atoms, according to the version passed as a parameter.
+
+  ## Example:
+
+  ```elixir
+  iex> Soap.get_namespace("1.2")
+  :"http://www.w3.org/2003/05/soap-envelope"
+  iex> Soap.get_namespace()
+  :"http://schemas.xmlsoap.org/soap/envelope/"
+  ```
+
+  """
+  def get_namespace_atoms, do: @namespace_versions_atoms[version()]
+  def get_namespace_atoms(version), do: @namespace_versions_atoms[version]
+
+  @doc """
+  Get the SOAP version.
+
+  ## Example:
+
+  ```elixir
+  iex> Soap.version()
+  "1.1"
+  ```
+
+  """
+  def version, do: Application.fetch_env!(:soap, :globals)[:version]
+
+  def version(opts) when is_list(opts) do
+    Keyword.get(opts, :soap_version, version())
   end
 
   defp handle_response(

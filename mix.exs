@@ -1,7 +1,7 @@
 defmodule Soap.MixProject do
   use Mix.Project
 
-  @source_url "https://github.com/elixir-soap/soap"
+  @source_url "https://github.com/romikya/soap"
   @version "1.1.1"
 
   def project do

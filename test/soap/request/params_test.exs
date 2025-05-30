@@ -8,7 +8,7 @@ defmodule Soap.Request.ParamsTest do
 
   test "#build_body converts map to Xml-like string successful" do
     xml_body = Fixtures.load_xml("send_service/SendMessageRequest.xml")
-    parameters = %{recipient: "WSPB", body: "BODY", type: "TYPE", date: "2018-01-19"}
+    parameters = [body: nil, date: "2018-01-19", recipient: "WSPB", type: "TYPE"]
     {_, wsdl} = Wsdl.parse_from_file(@wsdl_path)
     function_result = Params.build_body(wsdl, @operation, parameters, nil)
 
@@ -17,7 +17,7 @@ defmodule Soap.Request.ParamsTest do
 
   test "#build_body uses the custom WSDL SOAP version" do
     xml_body = Fixtures.load_xml("send_service/SendMessageRequest_soap12.xml")
-    parameters = %{recipient: "WSPB", body: "BODY", type: "TYPE", date: "2018-01-19"}
+    parameters = [body: "BODY", date: "2018-01-19", recipient: "WSPB", type: "TYPE"]
     {_, wsdl} = Wsdl.parse_from_file(@wsdl_path, soap_version: "1.2")
     function_result = Params.build_body(wsdl, @operation, parameters, nil)
 
@@ -49,7 +49,7 @@ defmodule Soap.Request.ParamsTest do
       Fixtures.load_xml("send_service/SendMessageRequest.xml")
       |> String.replace("WSPB", "123")
 
-    parameters = %{recipient: "123", body: "BODY", type: "TYPE", date: "2018-01-19"}
+    parameters = [body: nil, date: "2018-01-19", recipient: "123", type: "TYPE"]
     {_, wsdl} = Wsdl.parse_from_file(@wsdl_path)
     function_result = Params.build_body(wsdl, @operation, parameters, nil)
 
